@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbour Lights — Spot the Difference</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: #1c2438; color: #eef1f5;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 14px 18px 22px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; }
+  header h1 { margin: 0; font-size: 28px; letter-spacing: 0.5px; }
+  header h1 span { color: #ffb703; }
+  #levelText { color: #b9c0d0; font-size: 15px; }
+  .hud { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; margin: 12px 0; }
+  .stat { background: #252b38; border: 1px solid #3a4358; border-radius: 10px;
+    padding: 8px 14px; min-width: 130px; }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #8b93a3; }
+  .stat .value { font-size: 20px; font-weight: 700; }
+  #counter { color: #ffd700; }
+  .timer { flex: 1 1 220px; }
+  .timerbar { height: 10px; background: #11141b; border-radius: 6px; overflow: hidden; margin-top: 6px; }
+  #timerBar { height: 100%; width: 100%; background: #4caf7d; transition: width 0.2s linear; }
+  #timerBar.low { background: #e5534b; }
+  .buttons { display: flex; gap: 8px; align-items: center; }
+  button { background: #ffb703; color: #23283b; border: 0; border-radius: 8px;
+    padding: 9px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  button:hover { background: #ffc93c; }
+  button.ghost { background: #2a3040; color: #eef1f5; border: 1px solid #3a4358; }
+  button.ghost:hover { background: #343c50; }
+  button.big { font-size: 17px; padding: 13px 26px; margin-top: 10px; }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .panel { background: #f7f1e3; border-radius: 12px; padding: 10px; position: relative;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+  .panel .tag { position: absolute; top: -11px; left: 14px; background: #ffb703; color: #23283b;
+    font-size: 12px; font-weight: 800; letter-spacing: 1px; padding: 3px 10px; border-radius: 20px; }
+  .panel svg { display: block; width: 100%; height: auto; border-radius: 8px; cursor: crosshair; }
+  .message { min-height: 26px; margin: 12px 2px 0; font-size: 16px; }
+  .message.good { color: #8be0ae; }
+  .message.bad { color: #ff9d97; }
+  .found { background: #252b38; border: 1px solid #3a4358; border-radius: 10px;
+    padding: 10px 16px; margin-top: 10px; }
+  .found h2 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase;
+    letter-spacing: 1px; color: #8b93a3; }
+  .found ul { margin: 0; padding-left: 18px; columns: 2; }
+  .found li { font-size: 14px; line-height: 1.7; color: #c9d1de; }
+  .found li.empty { list-style: none; margin-left: -18px; color: #8b93a3; }
+  footer { margin-top: 12px; color: #8b93a3; font-size: 13px; line-height: 1.6; }
+  #overlay { position: fixed; inset: 0; background: rgba(12, 16, 28, 0.82);
+    display: flex; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
+  #overlay.hidden { display: none; }
+  #overlayCard { background: #252b38; border: 1px solid #3a4358; border-radius: 16px;
+    max-width: 560px; width: 100%; padding: 28px 32px; text-align: center;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.5); }
+  #overlayCard h1 { margin: 0 0 8px; font-size: 30px; }
+  #overlayCard p { line-height: 1.6; color: #c9d1de; }
+  #overlayCard .tagline { color: #ffb703; font-weight: 600; }
+  #overlayCard .rules { text-align: left; line-height: 1.9; color: #c9d1de; }
+  #overlayCard .stars { font-size: 34px; color: #ffd700; letter-spacing: 6px; margin: 4px 0; }
+  #overlayCard .best { color: #8b93a3; font-size: 14px; }
+  #overlayCard button { margin: 6px 4px 0; }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap; }
+  #reticleA, #reticleA2, #reticleB, #reticleB2 { display: none; pointer-events: none; }
+  @media (max-width: 760px) { .panels { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🔍 Harbour <span>Lights</span></h1>
+    <span id="levelText">Level 1 of 3 · Sunset Harbour Market</span>
+  </header>
+  <div class="hud">
+    <div class="stat"><div class="label">Found</div><div class="value" id="counter">0 of 8 found</div></div>
+    <div class="stat"><div class="label">Remaining</div><div class="value" id="remain">8 to go</div></div>
+    <div class="stat timer"><div class="label">Time left · <span id="timerText">2:00</span></div>
+      <div class="timerbar"><div id="timerBar"></div></div></div>
+    <div class="stat"><div class="label">Score</div><div class="value" id="scoreText">Score 0</div></div>
+    <div class="buttons">
+      <button id="hintBtn" class="ghost" title="Hint (H)">💡 <span id="hintText">Hints 3</span></button>
+      <button id="pauseBtn" class="ghost" title="Pause (P)">⏸ Pause</button>
+      <button id="muteBtn" class="ghost" title="Mute (M)">🔊 Sound</button>
+      <button id="restartBtn" class="ghost" title="Restart level (R)">↺ Restart</button>
+    </div>
+  </div>
+  <div class="panels">
+    <div class="panel"><span class="tag">PICTURE A</span>
+      <svg id="panelA" viewBox="0 0 560 420" role="img" aria-label="Left picture: find the differences"></svg>
+    </div>
+    <div class="panel"><span class="tag">PICTURE B</span>
+      <svg id="panelB" viewBox="0 0 560 420" role="img" aria-label="Right picture: find the differences"></svg>
+    </div>
+  </div>
+  <p class="message" id="message">Click a difference on either picture — or move with the arrow keys and press Enter.</p>
+  <div class="found"><h2>Found so far</h2><ul id="foundList"><li class="empty">Nothing found yet — look closely!</li></ul></div>
+  <footer>How to play: the two pictures look the same, but 8 things changed. Click a change on
+  either picture to ring it with gold. Arrow keys move the crosshair, Enter checks that spot,
+  H asks for a hint, P pauses, R restarts the scene. Three scenes, 24 differences — clear them
+  all before the clock runs out.</footer>
+</div>
+<div id="overlay" class="hidden"><div id="overlayCard"></div></div>
+<p id="status" role="status" aria-live="polite"></p>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
